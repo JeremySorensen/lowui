@@ -1,9 +1,11 @@
 <html>
     <head>
-        <title>Hello</title>
+        {meta}
+        {link}
+        <title>{title}</title>
         <script src="index.js"></script>
     </head>
     <body>
-        <div id="app"></div>
+        {body}
     </body>
 </html>
