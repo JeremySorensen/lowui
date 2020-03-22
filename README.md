@@ -1,4 +1,4 @@
-# lowui-rs
+# lowui
 Web UI for devices on local networks, code like it is running local, page updates using websockets.
 
 For IoT or network connected embedded devices, it is handy to be able to serve a web page that users can use for configuration
