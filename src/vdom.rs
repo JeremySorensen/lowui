@@ -94,6 +94,34 @@ impl VDom {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    fn add_events(&mut self) {
+        match self {
+            Self::Text => return;
+            Self::Element(element) => {
+                for child in &children {
+                    child.add_events();
+                }
+                
+                if child.attr.iter.find(|(k, v)| -> k == "id") == None {
+                    return;
+                }
+
+                match element.tag {
+                    "input" => {
+                        match element.attr.iter.find(|(k, v) -> k = "type") {
+                            "button" => element.attr.push(("onclick", "buttonClick(this)")),
+                            "checkbox" |
+                            "radio" |
+                            "number" |
+                            "select" |
+                            "text" => element.attr.push(("onchange", "valueChanged(this)")),
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn children_to_html(children: &[VDom]) -> String {
