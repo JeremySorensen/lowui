@@ -1,10 +1,37 @@
+use std::fmt;
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct Attr {
+    pub key: String,
+    pub value: Option<String>,
+}
+
+impl Attr {
+    pub fn new(key: String, value: String) -> Self {
+        Attr { key: key, value: Some(value) }
+    }
+
+    pub fn with_key_only(key: String) -> Self {
+        Attr { key: key, value: None }
+    }
+}
+
+impl fmt::Display for Attr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(value) = &self.value {
+            write!(f, r#"{}="{}""#, self.key, value)
+        } else {
+            write!(f, r#"{}"#, self.key)
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub enum VDom {
     Element {
         tag: String,
-        attr: Option<Vec<(String, String)>>,
+        attr: Option<Vec<Attr>>,
         children: Vec<VDom>,
     },
     Text(String),
@@ -27,7 +54,7 @@ impl VDom {
         }
     }
 
-    pub fn with_child_attr(tag: &str, attr: Vec<(String, String)>, child: VDom) -> VDom {
+    pub fn with_child_attr(tag: &str, attr: Vec<Attr>, child: VDom) -> VDom {
         VDom::Element {
             tag: tag.to_string(),
             attr: Some(attr),
@@ -35,7 +62,7 @@ impl VDom {
         }
     }
 
-    pub fn with_children_attr(tag: &str, attr: Vec<(String, String)>, children: Vec<VDom>) -> VDom {
+    pub fn with_children_attr(tag: &str, attr: Vec<Attr>, children: Vec<VDom>) -> VDom {
         VDom::Element {
             tag: tag.to_string(),
             attr: Some(attr),
@@ -51,7 +78,7 @@ impl VDom {
         }
     }
 
-    pub fn with_text_attr(tag: &str, text: String, attr: Vec<(String, String)>) -> VDom {
+    pub fn with_text_attr(tag: &str, text: String, attr: Vec<Attr>) -> VDom {
         VDom::Element {
             tag: tag.to_string(),
             attr: Some(attr),
@@ -97,25 +124,23 @@ impl VDom {
 
     fn add_events(&mut self) {
         match self {
-            Self::Text => return;
-            Self::Element(element) => {
-                for child in &children {
+            Self::Text(_) => return,
+            Self::Element{ tag, attr, children } => {
+                for child in children {
                     child.add_events();
                 }
                 
-                if child.attr.iter.find(|(k, v)| -> k == "id") == None {
-                    return;
-                }
+                match attr {
+                    None => return,
+                    Some(attr_ref) => {
+                        if attr_ref.iter().find(|a| { a.key == "id" }).is_none() {
+                            return;
+                        }
 
-                match element.tag {
-                    "input" => {
-                        match element.attr.iter.find(|(k, v) -> k = "type") {
-                            "button" => element.attr.push(("onclick", "buttonClick(this)")),
-                            "checkbox" |
-                            "radio" |
-                            "number" |
-                            "select" |
-                            "text" => element.attr.push(("onchange", "valueChanged(this)")),
+                        if tag == "button" {
+                            attr_ref.push(Attr::new("onclick".to_string(), "buttonClick(this)".to_string()));
+                        } else if tag == "input" || tag == "select" {
+                            attr_ref.push(Attr::new("onchange".to_string(), "valueChanged(this)".to_string()));
                         }
                     }
                 }
@@ -132,14 +157,10 @@ fn children_to_html(children: &[VDom]) -> String {
         .join("")
 }
 
-fn format_attr((key, value): &(String, String)) -> String {
-    format!("{k}=\"{v}\"", k = key, v = value)
-}
-
-fn attr_to_html(attr: &[(String, String)]) -> String {
+fn attr_to_html(attr: &[Attr]) -> String {
     attr.iter()
-        .map(format_attr)
-        .collect::<Vec<String>>()
+        .map(|a| { a.to_string() })
+        .collect::<Vec<_>>()
         .join(" ")
 }
 
