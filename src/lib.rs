@@ -57,8 +57,8 @@ impl From<Message> for Event {
 #[derive(Serialize, Deserialize)]
 pub enum Command {
     None,
-    AppendChild { parent_id: String, element: html::Node },
-    InsertBefore { sibling_id: String, element: html::Node },
+    AppendChild { id: String, element: html::Node },
+    InsertBefore { id: String, element: html::Node },
     Update { id: String, element: html::Node },
     Delete { id: String },
 }

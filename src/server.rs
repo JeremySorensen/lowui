@@ -82,7 +82,37 @@ pub fn start<T: crate::App>() {
             }}
 
             function receiveMessage(json) {{
-                console.log(\"received json\", json);
+                var obj = JSON.parse(json);
+                console.log(\"OBJ\", obj);
+                if (obj.Delete) {{
+                    document.removeElement(obj.Delete.id);
+                }} else {{
+                    console.log(\"el\", document.getElementById);
+
+                    if (obj.AppendChild) {{
+                        let newEl = makeElement(obj.AppendChild.element);
+                        document.getElementById(obj.AppendChild.id).appendChild(newEl);
+                    }} else if (obj.InsertBefore) {{
+                        let newEl = makeElement(obj.InsertBefore.element);
+                        document.insertBefore(document.getElementById(obj.InsertBefore.id, newEl));
+                    }} else if (obj.Update) {{
+                        let newEl = makeElement(obj.Update.element);
+                        let oldEl = document.getElementById(obj.Update.id);
+                        oldEl.parentNode.replaceChild(newEl, oldEl);
+                    }}
+                }}
+            }}
+
+            function makeElement(obj) {{
+                if (obj.Text) {{
+                    return document.createTextNode(obj.Text);
+                }}
+                
+                const element = obj.Element;
+                let newEl = window.document.createElement(element.tag);
+                element.attr && element.attr.forEach((a) => newEl.setAttribute(a.key, a.value));
+                element.children && element.children.forEach((c) => newEl.appendChild(makeElement(c)));
+                return newEl;
             }}
 
             var wsUri = \"ws://localhost:1234\";

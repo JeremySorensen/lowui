@@ -67,7 +67,7 @@ impl lowui::App for Application {
             lowui::Event::CheckChanged { id, .. } => id,
         };
 
-        lowui::Command::AppendChild { parent_id: "div".to_string(), element: html::Node::with_text("p", id) }
+        lowui::Command::AppendChild { id: "div".to_string(), element: html::Node::with_text("p", id) }
     }
 }
 
