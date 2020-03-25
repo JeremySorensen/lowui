@@ -16,9 +16,11 @@ fn http_init(html: String) {
     rocket::ignite().manage(html).mount("/", routes![index]).launch();
 }
 
-pub fn init(mut page: html::Page) {
+pub fn start<T: crate::App>() {
+
+    let mut page = T::init();
     page.add_events();
-    let html = make_page(page);
+    let html = format_page(page);
 
     thread::spawn(move || {
         http_init(html);
@@ -27,12 +29,15 @@ pub fn init(mut page: html::Page) {
     let server = TcpListener::bind("localhost:1234").unwrap();
     for stream in server.incoming() {
         spawn(move || {
+            let app = T::new();
             let mut websocket = accept(stream.unwrap()).unwrap();
             loop {
                 if let Ok(msg) = websocket.read_message() {
-                    println!("meg={}", msg);
-                    if msg.is_binary() || msg.is_text() {
-                        websocket.write_message(msg).unwrap();
+                    println!("msg={}", msg);
+                    if msg.is_text() {
+                        let message: crate::Message = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+                        let command = app.update(message.into());
+                        websocket.write_message(tungstenite::Message::Text(serde_json::to_string(&command).unwrap())).unwrap();
                     }
                 }
             }
@@ -54,7 +59,7 @@ pub fn init(mut page: html::Page) {
         format!("<meta name=\"{}\" content=\"{}\">", attr.key, attr.value.unwrap())
     }
     
-    fn make_page(page: html::Page) -> String {
+    fn format_page(page: html::Page) -> String {
         let links = format_links(page.header.links);
         let meta = page.header.meta.into_iter().map(|m| { format_meta(m) }).collect::<Vec<_>>().join("\n");
         let body = page.body.to_html();
@@ -126,7 +131,7 @@ pub fn init(mut page: html::Page) {
             }}
 
             function checkChanged() {{
-                sendMessage({{ event: \"check-changed\", type: event.target.type, id: event.target.id, checked: event.target.checked }});
+                sendMessage({{ event: \"check-changed\", type: event.target.type, id: event.target.id, checked: event.target.checked, name: event.target.name }});
             }}
            
         </script>
