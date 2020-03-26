@@ -21,11 +21,13 @@ fn br() -> html::Node {
     html::Node::empty("br")
 }
 
-struct Application { }
+struct Application {
+    ids: Vec<String>,
+ }
 
 impl lowui::App for Application {
 
-    fn new() -> Application { Application{} }
+    fn new() -> Application { Application {ids: Vec::<String>::new()} }
 
     fn init() -> html::Page {
         let header = html::Header::new("TEST".to_string());
@@ -56,7 +58,7 @@ impl lowui::App for Application {
         html::Page { header: header, body: body }
     }
 
-    fn update(&self, event: lowui::Event) -> lowui::Command {
+    fn update(&mut self, event: lowui::Event) -> lowui::Command {
         println!("{:?}", event);
 
         let id = match event {
@@ -67,7 +69,18 @@ impl lowui::App for Application {
             lowui::Event::CheckChanged { id, .. } => id,
         };
 
-        lowui::Command::AppendChild { id: "div".to_string(), element: html::Node::with_text("p", id) }
+
+        if id == "button-2" {
+            if let Some(remove_id) = self.ids.pop() {
+                lowui::Command::Delete { id: remove_id }
+            } else {
+                lowui::Command::None
+            }
+        } else {
+            let new_id = self.ids.len().to_string();
+            self.ids.push(new_id.clone());
+            lowui::Command::AppendChild { id: "div".to_string(), element: html::Node::with_text_attr("p", id, vid(&new_id)) }
+        }
     }
 }
 

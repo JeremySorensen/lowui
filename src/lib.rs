@@ -12,7 +12,7 @@ pub trait App {
     
     fn init() -> html::Page;
     
-    fn update(&self, event: Event) -> Command;
+    fn update(&mut self, event: Event) -> Command;
 }
 
 #[derive(Serialize, Deserialize)]

@@ -29,7 +29,7 @@ pub fn start<T: crate::App>() {
     let server = TcpListener::bind("localhost:1234").unwrap();
     for stream in server.incoming() {
         spawn(move || {
-            let app = T::new();
+            let mut app = T::new();
             let mut websocket = accept(stream.unwrap()).unwrap();
             loop {
                 if let Ok(msg) = websocket.read_message() {
@@ -85,7 +85,7 @@ pub fn start<T: crate::App>() {
                 var obj = JSON.parse(json);
                 console.log(\"OBJ\", obj);
                 if (obj.Delete) {{
-                    document.removeElement(obj.Delete.id);
+                    document.getElementById(obj.Delete.id).remove();
                 }} else {{
                     console.log(\"el\", document.getElementById);
 
