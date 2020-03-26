@@ -26,44 +26,94 @@ struct Message {
 }
 
 #[derive(Debug)]
-pub enum Event {
-    Click { id: String },
-    NumberChanged { id: String, value: f64 },
-    TextChanged { id: String, value: String },
-    RadioChecked { id: String, name: String },
-    CheckChanged { id: String, checked: bool },
+pub enum EventType {
+    Click,
+    NumberChanged(f64),
+    TextChanged(String),
+    RadioChecked(String),
+    CheckChanged(bool),
+}
+
+#[derive(Debug)]
+pub struct Event {
+    pub event_type: EventType,
+    pub id: String,
+    pub r#type: String,
 }
 
 impl From<Message> for Event {
     fn from(message: Message) -> Event {
         if message.event == "button-click" {
-            Event::Click { id: message.id }
+            Event { event_type: EventType::Click, id: message.id, r#type: message.r#type }
         } else if message.event == "check-changed" {
             if message.r#type == "radio" {
-                Event::RadioChecked { id: message.id, name: message.name.unwrap() }
+                Event { event_type: EventType::RadioChecked(message.name.unwrap()), id: message.id, r#type: message.r#type }
             } else {
-                Event::CheckChanged { id: message.id, checked: message.checked.unwrap() }
+                Event { event_type: EventType::CheckChanged(message.checked.unwrap()), id: message.id, r#type: message.r#type }
             }
         } else {
             if message.r#type == "number" {
-                Event::NumberChanged { id: message.id, value: message.value.unwrap().parse().unwrap() }
+                Event { event_type: EventType::NumberChanged(message.value.unwrap().parse().unwrap()), id: message.id, r#type: message.r#type }
             } else {
-                Event::TextChanged { id: message.id, value: message.value.unwrap() }
+                Event { event_type: EventType::TextChanged(message.value.unwrap()), id: message.id, r#type: message.r#type }
             }
         }
     }
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum Command {
+pub enum CommandType {
     None,
-    AppendChild { id: String, element: html::Node },
-    InsertBefore { id: String, element: html::Node },
-    Update { id: String, element: html::Node },
-    Delete { id: String },
+    AppendChild,
+    InsertBefore,
+    Update,
+    Delete,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct Command {
+    pub command_type: CommandType,
+    pub id: Option<String>,
+    pub node: Option<html::Node>
+}
 
+impl Command {
+    pub fn none() -> Command {
+        Command { command_type: CommandType::None, id: None, node: None }
+    }
+
+    pub fn append_child<T: Into<String>>(id: T, node: html::Node) -> Command {
+        Command {
+            command_type: CommandType::AppendChild,
+            id: Some(id.into()),
+            node: Some(node),
+        }
+    }
+
+    pub fn insert_before<T: Into<String>>(id: T, node: html::Node) -> Command {
+        Command {
+            command_type: CommandType::InsertBefore,
+            id: Some(id.into()),
+            node: Some(node),
+        }
+    }
+
+    pub fn update<T: Into<String>>(id: T, node: html::Node) -> Command {
+        Command {
+            command_type: CommandType::Update,
+            id: Some(id.into()),
+            node: Some(node),
+        }
+    }
+
+    pub fn delete<T: Into<String>>(id: T) -> Command {
+        Command {
+            command_type: CommandType::Delete,
+            id: Some(id.into()),
+            node: None,
+        }
+    }
+}
 
 
 

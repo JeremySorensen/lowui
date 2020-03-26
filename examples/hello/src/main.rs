@@ -2,7 +2,7 @@ use lowui::server;
 use lowui::html;
 
 fn id(value: &str) -> html::Attr {
-    html::Attr::new("id".to_string(), value.to_string())
+    html::Attr::new("id", value)
 }
 
 fn vid(value: &str) -> Vec<html::Attr> {
@@ -10,11 +10,11 @@ fn vid(value: &str) -> Vec<html::Attr> {
 }
 
 fn input(kind: &str) -> html::Attr {
-    html::Attr::new("type".to_string(), kind.to_string())
+    html::Attr::new("type", kind)
 }
 
 fn value(val: &str) -> html::Attr {
-    html::Attr::new("value".to_string(), val.to_string())
+    html::Attr::new("value", val)
 }
 
 fn br() -> html::Node {
@@ -23,21 +23,21 @@ fn br() -> html::Node {
 
 struct Application {
     ids: Vec<String>,
- }
+}
 
 impl lowui::App for Application {
 
     fn new() -> Application { Application {ids: Vec::<String>::new()} }
 
     fn init() -> html::Page {
-        let header = html::Header::new("TEST".to_string());
+        let header = html::Header::new("TEST");
         let body = html::Node::with_children_attr(
             "div",
             vid("div"),
             vec![
-                html::Node::with_text_attr("button", "Button 1".to_string(), vid("button-1")),
+                html::Node::with_text_attr("button", "Button 1", vid("button-1")),
                 br(),
-                html::Node::with_text_attr("button", "Button 2".to_string(), vid("button-2")),
+                html::Node::with_text_attr("button", "Button 2", vid("button-2")),
                 br(),
                 html::Node::with_attr("input", vec![id("number"), input("number"), value("5")]),
                 br(),
@@ -45,13 +45,13 @@ impl lowui::App for Application {
                 br(),
                 html::Node::with_attr("input", vec![id("checkbox"), input("checkbox")]),
                 br(),
-                html::Node::with_attr("input", vec![id("radio-1"), input("radio"), html::Attr::new("name".to_string(), "radio".to_string()), html::Attr::with_key_only("checked".to_string())]),
+                html::Node::with_attr("input", vec![id("radio-1"), input("radio"), html::Attr::new("name", "radio"), html::Attr::with_key_only("checked")]),
                 br(),
-                html::Node::with_attr("input", vec![id("radio-2"), input("radio"), html::Attr::new("name".to_string(), "radio".to_string())]),
+                html::Node::with_attr("input", vec![id("radio-2"), input("radio"), html::Attr::new("name", "radio")]),
                 br(),
                 html::Node::with_children_attr("select", vid("select"), vec![
-                    html::Node::with_text_attr("option", "One".to_string(), vid("one")),
-                    html::Node::with_text_attr("option", "Two".to_string(), vid("two")),
+                    html::Node::with_text_attr("option", "One", vid("one")),
+                    html::Node::with_text_attr("option", "Two", vid("two")),
                 ]),
             ]
         );
@@ -61,25 +61,20 @@ impl lowui::App for Application {
     fn update(&mut self, event: lowui::Event) -> lowui::Command {
         println!("{:?}", event);
 
-        let id = match event {
-            lowui::Event::Click { id } => id,
-            lowui::Event::NumberChanged { id, .. } => id,
-            lowui::Event::TextChanged { id, .. } => id,
-            lowui::Event::RadioChecked { id, .. } => id,
-            lowui::Event::CheckChanged { id, .. } => id,
-        };
-
-
-        if id == "button-2" {
+        if event.id == "button-2" {
             if let Some(remove_id) = self.ids.pop() {
-                lowui::Command::Delete { id: remove_id }
+                lowui::Command::delete(remove_id)
             } else {
-                lowui::Command::None
+                lowui::Command::none()
             }
         } else {
             let new_id = self.ids.len().to_string();
             self.ids.push(new_id.clone());
-            lowui::Command::AppendChild { id: "div".to_string(), element: html::Node::with_text_attr("p", id, vid(&new_id)) }
+            let node = html::Node::with_text_attr("p", event.id, vid(&new_id));
+            lowui::Command::append_child(
+                "div",
+                node
+            )
         }
     }
 }

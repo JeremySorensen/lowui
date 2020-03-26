@@ -84,21 +84,28 @@ pub fn start<T: crate::App>() {
             function receiveMessage(json) {{
                 var obj = JSON.parse(json);
                 console.log(\"OBJ\", obj);
-                if (obj.Delete) {{
-                    document.getElementById(obj.Delete.id).remove();
-                }} else {{
-                    console.log(\"el\", document.getElementById);
-
-                    if (obj.AppendChild) {{
-                        let newEl = makeElement(obj.AppendChild.element);
-                        document.getElementById(obj.AppendChild.id).appendChild(newEl);
-                    }} else if (obj.InsertBefore) {{
-                        let newEl = makeElement(obj.InsertBefore.element);
-                        document.insertBefore(document.getElementById(obj.InsertBefore.id, newEl));
-                    }} else if (obj.Update) {{
-                        let newEl = makeElement(obj.Update.element);
-                        let oldEl = document.getElementById(obj.Update.id);
-                        oldEl.parentNode.replaceChild(newEl, oldEl);
+                if (obj.id) {{
+                    let element = document.getElementById(obj.id);
+                    switch (obj.command_type) {{
+                        case \"Delete\": {{
+                            element.remove();
+                            break;
+                        }}
+                        case \"AppendChild\": {{
+                            let newEl = makeElement(obj.node);
+                            element.appendChild(newEl);
+                            break;
+                        }}
+                        case \"InsertBefore\": {{
+                            let newEl = makeElement(obj.node);
+                            document.insertBefore(element, newEl);
+                            break;
+                        }}
+                        case \"Update\": {{
+                            let newEl = makeElement(obj.node);
+                            element.parentNode.replaceChild(newEl, element);
+                            break;
+                        }}
                     }}
                 }}
             }}

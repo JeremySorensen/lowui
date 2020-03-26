@@ -8,12 +8,12 @@ pub struct Attr {
 }
 
 impl Attr {
-    pub fn new(key: String, value: String) -> Self {
-        Attr { key: key, value: Some(value) }
+    pub fn new<T: Into<String>, U: Into<String>>(key: T, value: U) -> Self {
+        Attr { key: key.into(), value: Some(value.into()) }
     }
 
-    pub fn with_key_only(key: String) -> Self {
-        Attr { key: key, value: None }
+    pub fn with_key_only<T: Into<String>>(key: T) -> Self {
+        Attr { key: key.into(), value: None }
     }
 }
 
@@ -32,6 +32,16 @@ pub struct Link {
     pub attr: Option<Vec<Attr>>,
 }
 
+impl Link {
+    pub fn new<T: Into<String>>(rel: T) -> Link {
+        Link { rel: rel.into(), attr: None }
+    }
+
+    pub fn with_attr<T: Into<String>>(rel: T, attr: Vec<Attr>) -> Link {
+        Link { rel: rel.into(), attr: Some(attr) }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub enum Node {
     Element {
@@ -43,67 +53,67 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn empty(tag: &str) -> Self {
+    pub fn empty<T: Into<String>>(tag: T) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: None,
             children: Vec::<Node>::new(),
         }
     }
 
-    pub fn with_attr(tag: &str, attr: Vec<Attr>) -> Self {
+    pub fn with_attr<T: Into<String>>(tag: T, attr: Vec<Attr>) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: Some(attr),
             children: Vec::<Node>::new(),
         }
     }
 
-    pub fn with_child(tag: &str, child: Self) -> Self {
+    pub fn with_child<T: Into<String>>(tag: T, child: Self) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: None,
             children: vec![child],
         }
     }
 
-    pub fn with_children(tag: &str, children: Vec<Self>) -> Self {
+    pub fn with_children<T: Into<String>>(tag: T, children: Vec<Self>) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: None,
             children: children,
         }
     }
 
-    pub fn with_child_attr(tag: &str, attr: Vec<Attr>, child: Self) -> Self {
+    pub fn with_child_attr<T: Into<String>>(tag: T, attr: Vec<Attr>, child: Self) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: Some(attr),
             children: vec![child],
         }
     }
 
-    pub fn with_children_attr(tag: &str, attr: Vec<Attr>, children: Vec<Self>) -> Self {
+    pub fn with_children_attr<T: Into<String>>(tag: T, attr: Vec<Attr>, children: Vec<Self>) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: Some(attr),
             children: children,
         }
     }
 
-    pub fn with_text(tag: &str, text: String) -> Self {
+    pub fn with_text<T: Into<String>, U: Into<String>>(tag: T, text: T) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: None,
-            children: vec![Self::Text(text)],
+            children: vec![Self::Text(text.into())],
         }
     }
 
-    pub fn with_text_attr(tag: &str, text: String, attr: Vec<Attr>) -> Self {
+    pub fn with_text_attr<T: Into<String>, U: Into<String>>(tag: T, text: U, attr: Vec<Attr>) -> Self {
         Self::Element {
-            tag: tag.to_string(),
+            tag: tag.into(),
             attr: Some(attr),
-            children: vec![Self::Text(text)],
+            children: vec![Self::Text(text.into())],
         }
     }
 
@@ -159,18 +169,18 @@ impl Node {
                         }
 
                         if tag == "button" {
-                            attr_ref.push(Attr::new("onclick".to_string(), "buttonClick()".to_string()));
+                            attr_ref.push(Attr::new("onclick", "buttonClick()"));
                         } else if tag == "select" {
-                            attr_ref.push(Attr::new("onchange".to_string(), "valueChanged()".to_string()));
+                            attr_ref.push(Attr::new("onchange", "valueChanged()"));
                         } else if tag == "input" {
                             if let Some(type_attr) = attr_ref.iter().find(|a| { a.key == "type" }) {
                                 let kind = type_attr.value.as_ref().unwrap();
                                 if kind == "button" {
-                                    attr_ref.push(Attr::new("onclick".to_string(), "buttonClick()".to_string()));
+                                    attr_ref.push(Attr::new("onclick", "buttonClick()"));
                                 } else if kind == "text" || kind == "number" {
-                                    attr_ref.push(Attr::new("onchange".to_string(), "valueChanged()".to_string()));
+                                    attr_ref.push(Attr::new("onchange", "valueChanged()"));
                                 } else if kind == "checkbox" || kind == "radio" {
-                                    attr_ref.push(Attr::new("onchange".to_string(), "checkChanged()".to_string()));
+                                    attr_ref.push(Attr::new("onchange", "checkChanged()"));
                                 }
                             }
                         }
@@ -203,23 +213,23 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new(title: String) -> Self {
+    pub fn new<T: Into<String>>(title: T) -> Self {
         Self {
-            title: title,
+            title: title.into(),
             links: Vec::<Link>::new(),
             meta: Vec::<Attr>::new(),
         }
     }
     
-    pub fn add_link(&mut self, rel: String) {
-        self.links.push(Link { rel: rel, attr: None });
+    pub fn add_link<T: Into<String>>(&mut self, rel: T) {
+        self.links.push(Link::new(rel));
     }
 
-    pub fn add_link_attr(&mut self, rel: String, attr: Vec<Attr>) {
-        self.links.push(Link { rel: rel, attr: Some(attr) });
+    pub fn add_link_attr<T: Into<String>>(&mut self, rel: T, attr: Vec<Attr>) {
+        self.links.push(Link::with_attr(rel, attr));
     }
 
-    pub fn add_meta(&mut self, key: String, value: String) {
+    pub fn add_meta<T: Into<String>, U: Into<String>>(&mut self, key: T, value: U) {
         self.meta.push(Attr::new(key, value));
     }
 }
@@ -230,6 +240,11 @@ pub struct Page {
 }
 
 impl Page {
+
+    pub fn new(header: Header, body: Node) -> Self {
+        Page { header: header, body : body }
+    }
+
     pub fn add_events(&mut self) {
         self.body.add_events();
     }
