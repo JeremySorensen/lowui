@@ -84,32 +84,34 @@ pub fn start<T: crate::App>() {
             }}
 
             function receiveMessage(json) {{
-                var obj = JSON.parse(json);
-                console.log(\"OBJ\", obj);
-                if (obj.id) {{
-                    let element = document.getElementById(obj.id);
-                    switch (obj.command_type) {{
-                        case \"Delete\": {{
-                            element.remove();
-                            break;
-                        }}
-                        case \"AppendChild\": {{
-                            let newEl = makeElement(obj.node);
-                            element.appendChild(newEl);
-                            break;
-                        }}
-                        case \"InsertBefore\": {{
-                            let newEl = makeElement(obj.node);
-                            document.insertBefore(element, newEl);
-                            break;
-                        }}
-                        case \"Update\": {{
-                            let newEl = makeElement(obj.node);
-                            element.parentNode.replaceChild(newEl, element);
-                            break;
+                var objs = JSON.parse(json);
+                console.log(\"OBJs\", objs);
+                objs.forEach((obj)=> {{
+                    if (obj.id) {{
+                        let element = document.getElementById(obj.id);
+                        switch (obj.command_type) {{
+                            case \"Delete\": {{
+                                element.remove();
+                                break;
+                            }}
+                            case \"AppendChild\": {{
+                                let newEl = makeElement(obj.node);
+                                element.appendChild(newEl);
+                                break;
+                            }}
+                            case \"InsertBefore\": {{
+                                let newEl = makeElement(obj.node);
+                                document.insertBefore(element, newEl);
+                                break;
+                            }}
+                            case \"Update\": {{
+                                let newEl = makeElement(obj.node);
+                                element.parentNode.replaceChild(newEl, element);
+                                break;
+                            }}
                         }}
                     }}
-                }}
+                }});
             }}
 
             function makeElement(obj) {{
