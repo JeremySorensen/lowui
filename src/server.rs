@@ -16,6 +16,8 @@ fn http_init(html: String) {
     rocket::ignite().manage(html).mount("/", routes![index]).launch();
 }
 
+/// Starts the server, every request from the client will spawn a new thread
+/// with a new instance of the type given as a type parameter
 pub fn start<T: crate::App>() {
 
     let mut page = T::init();
@@ -60,8 +62,8 @@ pub fn start<T: crate::App>() {
     }
     
     fn format_page(page: html::Page) -> String {
-        let links = format_links(page.header.links);
-        let meta = page.header.meta.into_iter().map(|m| { format_meta(m) }).collect::<Vec<_>>().join("\n");
+        let links = format_links(page.head.links);
+        let meta = page.head.meta.into_iter().map(|m| { format_meta(m) }).collect::<Vec<_>>().join("\n");
         let body = page.body.to_html();
     
         format!("
@@ -177,6 +179,6 @@ pub fn start<T: crate::App>() {
             {body}
           </body>
         </html>
-        ", meta=meta, link=links, title=page.header.title, body=body)
+        ", meta=meta, link=links, title=page.head.title, body=body)
     }
 }
