@@ -12,10 +12,12 @@
 //! JavaScript.
 
 #![feature(proc_macro_hygiene, decl_macro)]
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
 use serde::{Deserialize, Serialize};
 
+pub mod builders;
 pub mod html;
 mod server;
 
@@ -23,13 +25,12 @@ pub use self::server::start;
 
 /// Trait representing the user application
 pub trait App {
-    
     /// Returns an instance, this will be called once for every client connection
     fn new() -> Self;
-    
+
     /// Returns an HTML page, this will be called once before the server starts
     fn init() -> html::Page;
-    
+
     /// Updates the application state and returns commands to update the UI
     /// this is called on every client event
     fn update(&mut self, event: Event) -> Vec<Command>;
@@ -69,18 +70,38 @@ pub struct Event {
 impl From<Message> for Event {
     fn from(message: Message) -> Event {
         if message.event == "button-click" {
-            Event { event_type: EventType::Click, id: message.id, r#type: message.r#type }
+            Event {
+                event_type: EventType::Click,
+                id: message.id,
+                r#type: message.r#type,
+            }
         } else if message.event == "check-changed" {
             if message.r#type == "radio" {
-                Event { event_type: EventType::RadioChecked(message.name.unwrap()), id: message.id, r#type: message.r#type }
+                Event {
+                    event_type: EventType::RadioChecked(message.name.unwrap()),
+                    id: message.id,
+                    r#type: message.r#type,
+                }
             } else {
-                Event { event_type: EventType::CheckChanged(message.checked.unwrap()), id: message.id, r#type: message.r#type }
+                Event {
+                    event_type: EventType::CheckChanged(message.checked.unwrap()),
+                    id: message.id,
+                    r#type: message.r#type,
+                }
             }
         } else {
             if message.r#type == "number" {
-                Event { event_type: EventType::NumberChanged(message.value.unwrap().parse().unwrap()), id: message.id, r#type: message.r#type }
+                Event {
+                    event_type: EventType::NumberChanged(message.value.unwrap().parse().unwrap()),
+                    id: message.id,
+                    r#type: message.r#type,
+                }
             } else {
-                Event { event_type: EventType::TextChanged(message.value.unwrap()), id: message.id, r#type: message.r#type }
+                Event {
+                    event_type: EventType::TextChanged(message.value.unwrap()),
+                    id: message.id,
+                    r#type: message.r#type,
+                }
             }
         }
     }
@@ -98,20 +119,24 @@ pub enum CommandType {
 }
 
 /// A command to execute on the client
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct Command {
     /// The type of command
     pub command_type: CommandType,
     /// The ID of the element affected by the command
     pub id: Option<String>,
     /// The new node for AppendChild, InsertBefore, and Update commands
-    pub node: Option<html::Node>
+    pub node: Option<html::Node>,
 }
 
 impl Command {
     /// Returns a do-nothing command
     pub fn none() -> Command {
-        Command { command_type: CommandType::None, id: None, node: None }
+        Command {
+            command_type: CommandType::None,
+            id: None,
+            node: None,
+        }
     }
 
     /// Returns a command to append a child Node to an element identified by id

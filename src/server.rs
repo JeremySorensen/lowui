@@ -10,16 +10,20 @@ use tungstenite::accept;
 use crate::html;
 
 #[get("/")]
-fn index(html: State<String>) -> Html<String> { Html(html.inner().to_string()) }
+fn index(html: State<String>) -> Html<String> {
+    Html(html.inner().to_string())
+}
 
 fn http_init(html: String) {
-    rocket::ignite().manage(html).mount("/", routes![index]).launch();
+    rocket::ignite()
+        .manage(html)
+        .mount("/", routes![index])
+        .launch();
 }
 
 /// Starts the server, every request from the client will spawn a new thread
 /// with a new instance of the type given as a type parameter
 pub fn start<T: crate::App>() {
-
     let mut page = T::init();
     page.add_events();
     let html = format_page(page);
@@ -37,9 +41,14 @@ pub fn start<T: crate::App>() {
                 if let Ok(msg) = websocket.read_message() {
                     println!("msg={}", msg);
                     if msg.is_text() {
-                        let message: crate::Message = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+                        let message: crate::Message =
+                            serde_json::from_str(msg.to_text().unwrap()).unwrap();
                         let command = app.update(message.into());
-                        websocket.write_message(tungstenite::Message::Text(serde_json::to_string(&command).unwrap())).unwrap();
+                        websocket
+                            .write_message(tungstenite::Message::Text(
+                                serde_json::to_string(&command).unwrap(),
+                            ))
+                            .unwrap();
                     }
                 }
             }
@@ -47,25 +56,43 @@ pub fn start<T: crate::App>() {
     }
 
     fn format_links(links: Vec<html::Link>) -> String {
-        links.into_iter().map(|link| -> String {
-            if let Some(attr) = link.attr {
-                let attr_str = attr.iter().map(|a| { a.to_string() }).collect::<Vec<_>>().join(" ");
-                format!("<link rel=\"{}\" {}>", link.rel, attr_str)
-            } else {
-                format!("<link rel=\"{}\">", link.rel)
-            }
-        }).collect::<Vec<_>>().join("\n")
+        links
+            .into_iter()
+            .map(|link| -> String {
+                if let Some(attr) = link.attr {
+                    let attr_str = attr
+                        .iter()
+                        .map(|a| a.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    format!("<link rel=\"{}\" {}>", link.rel, attr_str)
+                } else {
+                    format!("<link rel=\"{}\">", link.rel)
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
     }
-    
+
     fn format_meta(attr: html::Attr) -> String {
-        format!("<meta name=\"{}\" content=\"{}\">", attr.key, attr.value.unwrap())
+        format!(
+            "<meta name=\"{}\" content=\"{}\">",
+            attr.name,
+            attr.value.unwrap()
+        )
     }
-    
+
     fn format_page(page: html::Page) -> String {
         let links = format_links(page.head.links);
-        let meta = page.head.meta.into_iter().map(|m| { format_meta(m) }).collect::<Vec<_>>().join("\n");
+        let meta = page
+            .head
+            .meta
+            .into_iter()
+            .map(|m| format_meta(m))
+            .collect::<Vec<_>>()
+            .join("\n");
         let body = page.body.to_html();
-    
+
         format!("
         <html>
           <head>
@@ -121,7 +148,7 @@ pub fn start<T: crate::App>() {
                 
                 const element = obj.Element;
                 let newEl = window.document.createElement(element.tag);
-                element.attr && element.attr.forEach((a) => newEl.setAttribute(a.key, a.value));
+                element.attr && element.attr.forEach((a) => newEl.setAttribute(a.name, a.value));
                 element.children && element.children.forEach((c) => newEl.appendChild(makeElement(c)));
                 return newEl;
             }}

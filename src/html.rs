@@ -1,36 +1,43 @@
+use serde::Serialize;
 use std::fmt;
-use serde::{Deserialize, Serialize};
 
 /// An HTML attribute
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct Attr {
-    pub key: String,
+    pub name: &'static str,
     pub value: Option<String>,
 }
 
 impl Attr {
     /// Returns a new Attr with key and value
-    pub fn new<T: Into<String>, U: Into<String>>(key: T, value: U) -> Self {
-        Attr { key: key.into(), value: Some(value.into()) }
+    pub fn new<T: Into<String>>(name: &'static str, value: T) -> Self {
+        Self {
+            name: name,
+            value: Some(value.into()),
+        }
     }
 
     /// Returns a new Attr with no value
-    pub fn with_key_only<T: Into<String>>(key: T) -> Self {
-        Attr { key: key.into(), value: None }
+    pub fn name_only(name: &'static str) -> Self {
+        Self {
+            name: name,
+            value: None,
+        }
     }
 }
 
 impl fmt::Display for Attr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(value) = &self.value {
-            write!(f, r#"{}="{}""#, self.key, value)
+            write!(f, r#"{}="{}""#, self.name, value)
         } else {
-            write!(f, r#"{}"#, self.key)
+            write!(f, r#"{}"#, self.name)
         }
     }
 }
 
 /// A &lt;link rel="..."&gt; element
+#[derive(Debug)]
 pub struct Link {
     /// The rel attribute
     pub rel: String,
@@ -41,120 +48,91 @@ pub struct Link {
 impl Link {
     /// Returns a new Link with no attributes except rel
     pub fn new<T: Into<String>>(rel: T) -> Link {
-        Link { rel: rel.into(), attr: None }
+        Link {
+            rel: rel.into(),
+            attr: None,
+        }
     }
 
     /// Returns a new Link with addtional attributes
     pub fn with_attr<T: Into<String>>(rel: T, attr: Vec<Attr>) -> Link {
-        Link { rel: rel.into(), attr: Some(attr) }
+        Link {
+            rel: rel.into(),
+            attr: Some(attr),
+        }
     }
 }
 
 /// An HTML element or text node
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub enum Node {
     Element {
         /// The element type, or tag
-        tag: String,
+        tag: &'static str,
         /// Any attributes of the element
-        attr: Option<Vec<Attr>>,
+        attr: Vec<Attr>,
         /// Any children of the element
-        children: Option<Vec<Node>>,
+        children: Vec<Node>,
+        /// True if element is empty like &lt;br&gt;
+        is_empty: bool,
     },
     Text(String),
 }
 
 impl Node {
-    /// Returns an element with no children and no attributes
-    pub fn empty<T: Into<String>>(tag: T) -> Self {
+    pub(crate) fn new_el(
+        tag: &'static str,
+        attr: Vec<Attr>,
+        children: Vec<Node>,
+        is_empty: bool,
+    ) -> Self {
         Self::Element {
-            tag: tag.into(),
-            attr: None,
-            children: None,
+            tag: tag,
+            attr: attr,
+            children: children,
+            is_empty: is_empty,
         }
     }
 
-    /// Returns an element with no children and one or more attributes
-    pub fn with_attr<T: Into<String>>(tag: T, attr: Vec<Attr>) -> Self {
-        Self::Element {
-            tag: tag.into(),
-            attr: Some(attr),
-            children: None,
-        }
+    pub(crate) fn new_text<T: Into<String>>(text: T) -> Self {
+        Node::Text(text.into())
     }
 
-    /// Returns an element with a single child and no attributes
-    pub fn with_child<T: Into<String>>(tag: T, child: Self) -> Self {
-        Self::Element {
-            tag: tag.into(),
-            attr: None,
-            children: Some(vec![child]),
-        }
-    }
-
-    /// Returns an element with multiple children and no attributes
-    pub fn with_children<T: Into<String>>(tag: T, children: Vec<Self>) -> Self {
-        Self::Element {
-            tag: tag.into(),
-            attr: None,
-            children: Some(children),
-        }
-    }
-
-    /// Returns an element with one child and one or more attributes
-    pub fn with_child_attr<T: Into<String>>(tag: T, attr: Vec<Attr>, child: Self) -> Self {
-        Self::Element {
-            tag: tag.into(),
-            attr: Some(attr),
-            children: Some(vec![child]),
-        }
-    }
-
-    /// Returns an element with multiple children and one or more attributes
-    pub fn with_children_attr<T: Into<String>>(tag: T, attr: Vec<Attr>, children: Vec<Self>) -> Self {
-        Self::Element {
-            tag: tag.into(),
-            attr: Some(attr),
-            children: Some(children),
-        }
-    }
-
-    /// Returns a text node
-    pub fn text<T: Into<String>>(text: T) -> Self {
-        Self::Text(text.into())
-    }
- 
-    pub (crate) fn to_html(&self) -> String {
+    pub(crate) fn to_html(&self) -> String {
         match self {
             Self::Element {
                 tag,
                 attr,
                 children,
+                is_empty,
             } => {
-
-                let children = if let Some(ch) = children {
-                    children_to_html(&ch)
-                } else {
-                    "".to_string()
-                };
-
                 let space;
                 let attr_txt;
-                if let Some(attr) = attr {
-                    space = " ".to_string();
-                    attr_txt = attr_to_html(&attr);
-                } else {
+                if attr.is_empty() {
                     space = "".to_string();
                     attr_txt = "".to_string();
+                } else {
+                    space = " ".to_string();
+                    attr_txt = attr_to_html(&attr);
                 }
 
-                format!(
-                    "<{t}{s}{a}>{c}</{t}>",
-                    t = tag,
-                    s = space,
-                    a = attr_txt,
-                    c = children
-                )
+                if *is_empty {
+                    format!("<{t}{s}{a}>", t = tag, s = space, a = attr_txt,)
+                } else {
+                    let children = if children.is_empty() {
+                        "".to_string()
+                    } else {
+                        children_to_html(children)
+                    };
+
+                    format!(
+                        "<{t}{s}{a}>{c}</{t}>",
+                        t = tag,
+                        s = space,
+                        a = attr_txt,
+                        c = children
+                    )
+                }
             }
 
             Self::Text(t) => t.to_string(),
@@ -164,35 +142,33 @@ impl Node {
     fn add_events(&mut self) {
         match self {
             Self::Text(_) => return,
-            Self::Element{ tag, attr, children } => {
-                if let Some(ch) = children {
-                    for child in ch {
-                        child.add_events();
-                    }
+            Self::Element {
+                tag,
+                attr,
+                children,
+                is_empty: _,
+            } => {
+                for child in children {
+                    child.add_events();
                 }
-                
-                match attr {
-                    None => return,
-                    Some(attr_ref) => {
-                        if attr_ref.iter().find(|a| { a.key == "id" }).is_none() {
-                            return;
-                        }
 
-                        if tag == "button" {
-                            attr_ref.push(Attr::new("onclick", "buttonClick()"));
-                        } else if tag == "select" {
-                            attr_ref.push(Attr::new("onchange", "valueChanged()"));
-                        } else if tag == "input" {
-                            if let Some(type_attr) = attr_ref.iter().find(|a| { a.key == "type" }) {
-                                let kind = type_attr.value.as_ref().unwrap();
-                                if kind == "button" {
-                                    attr_ref.push(Attr::new("onclick", "buttonClick()"));
-                                } else if kind == "text" || kind == "number" {
-                                    attr_ref.push(Attr::new("onchange", "valueChanged()"));
-                                } else if kind == "checkbox" || kind == "radio" {
-                                    attr_ref.push(Attr::new("onchange", "checkChanged()"));
-                                }
-                            }
+                if attr.iter().find(|a| a.name == "id").is_none() {
+                    return;
+                }
+
+                if *tag == "button" {
+                    attr.push(Attr::new("onclick", "buttonClick()"));
+                } else if *tag == "select" {
+                    attr.push(Attr::new("onchange", "valueChanged()"));
+                } else if *tag == "input" {
+                    if let Some(type_attr) = attr.iter().find(|a| a.name == "type") {
+                        let kind = type_attr.value.as_ref().unwrap();
+                        if kind == "button" {
+                            attr.push(Attr::new("onclick", "buttonClick()"));
+                        } else if kind == "text" || kind == "number" {
+                            attr.push(Attr::new("onchange", "valueChanged()"));
+                        } else if kind == "checkbox" || kind == "radio" {
+                            attr.push(Attr::new("onchange", "checkChanged()"));
                         }
                     }
                 }
@@ -217,19 +193,19 @@ impl Head {
             meta: Vec::<Attr>::new(),
         }
     }
-    
+
     /// Adds a link (&lt;link&gt; element) with no attributes
-    pub fn add_link<T: Into<String>>(&mut self, rel: T) {
+    pub fn link<T: Into<String>>(&mut self, rel: T) {
         self.links.push(Link::new(rel));
     }
 
     /// Adds a link (&lt;link&gt; element) with one or more attributes
-    pub fn add_link_attr<T: Into<String>>(&mut self, rel: T, attr: Vec<Attr>) {
+    pub fn link_attr<T: Into<String>>(&mut self, rel: T, attr: Vec<Attr>) {
         self.links.push(Link::with_attr(rel, attr));
     }
 
     /// Adds a &lt;meta&gt; element
-    pub fn add_meta<T: Into<String>, U: Into<String>>(&mut self, name: T, content: U) {
+    pub fn meta<T: Into<String>>(&mut self, name: &'static str, content: T) {
         self.meta.push(Attr::new(name, content));
     }
 }
@@ -241,13 +217,15 @@ pub struct Page {
 }
 
 impl Page {
-
     /// Returns a new Page with a Head and body (Node)
     pub fn new(head: Head, body: Node) -> Self {
-        Page { head: head, body : body }
+        Page {
+            head: head,
+            body: body,
+        }
     }
 
-    pub (crate) fn add_events(&mut self) {
+    pub(crate) fn add_events(&mut self) {
         self.body.add_events();
     }
 }
@@ -262,8 +240,7 @@ fn children_to_html(children: &[Node]) -> String {
 
 fn attr_to_html(attr: &[Attr]) -> String {
     attr.iter()
-        .map(|a| { a.to_string() })
+        .map(|a| a.to_string())
         .collect::<Vec<_>>()
         .join(" ")
 }
-
