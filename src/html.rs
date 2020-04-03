@@ -39,15 +39,14 @@ impl HtmlPage {
         self
     }
 
-    pub(crate)fn into_html(self) -> String {
-
+    pub(crate) fn into_html(self) -> String {
         let links = join_as_strings(self.links, "\n", |link| {
-            let attrs = join_as_strings(link.attrs, " ", |attr| { attr.to_string() });
+            let attrs = join_as_strings(link.attrs, " ", |attr| attr.to_string());
             format!("<link {}>", attrs)
         });
 
         let metas = join_as_strings(self.metas, "\n", |meta| -> String {
-            let attrs = join_as_strings(meta.attrs, " ", |attr| { attr.to_string() });
+            let attrs = join_as_strings(meta.attrs, " ", |attr| attr.to_string());
             format!("<meta {}>", attrs)
         });
 
@@ -230,7 +229,7 @@ impl Meta {
             attrs: Vec::<Attr>::new(),
         }
     }
-   
+
     pub fn charset<T: Into<String>>(mut self, value: T) -> Self {
         self.attrs.push(Attr::new("charset", value));
         self
@@ -262,10 +261,10 @@ pub struct Link {
 impl Link {
     pub fn new<T: Into<String>>(rel: T) -> Self {
         Self {
-            attrs: vec![Attr::new("rel", rel)]
+            attrs: vec![Attr::new("rel", rel)],
         }
     }
-    
+
     pub fn crossorigin<T: Into<String>>(mut self, value: T) -> Self {
         self.attrs.push(Attr::new("crossorigin", value));
         self
@@ -331,7 +330,6 @@ impl Node {
         children: Vec<Node>,
         is_empty: bool,
     ) -> Self {
-
         for event_kind in events {
             attrs.push(Attr::new(event_kind.to_str(), "onevent()"));
         }
@@ -363,7 +361,7 @@ impl Node {
                     attr_txt = "".to_string();
                 } else {
                     space = " ".to_string();
-                    attr_txt = join_as_strings(attrs, " ", |attr| { attr.to_string() })
+                    attr_txt = join_as_strings(attrs, " ", |attr| attr.to_string())
                 }
 
                 if is_empty {
@@ -372,7 +370,7 @@ impl Node {
                     let children = if children.is_empty() {
                         "".to_string()
                     } else {
-                        join_as_strings(children, "", |child| { child.into_html() })
+                        join_as_strings(children, "", |child| child.into_html())
                     };
 
                     format!(
@@ -524,7 +522,9 @@ impl EventKind {
 }
 
 fn join_as_strings<T, F>(items: Vec<T>, delim: &'static str, fun: F) -> String
-where F: FnMut(T) -> String {
+where
+    F: FnMut(T) -> String,
+{
     items
         .into_iter()
         .map(fun)

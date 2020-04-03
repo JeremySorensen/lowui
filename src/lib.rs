@@ -15,7 +15,7 @@
 #[macro_use]
 extern crate rocket;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub mod builders;
 pub mod html;
@@ -109,7 +109,11 @@ impl Command {
     }
 
     /// Returns a command to set (add or update) an attribute on the element given by id
-    pub fn set_attribute<T: Into<String>, U: Into<String>>(id: T, name: &'static str, value: U) -> Command {
+    pub fn set_attribute<T: Into<String>, U: Into<String>>(
+        id: T,
+        name: &'static str,
+        value: U,
+    ) -> Command {
         Command {
             command_type: CommandType::SetAttribute(html::Attr::new(name, value)),
             id: Some(id.into()),
