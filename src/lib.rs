@@ -15,7 +15,7 @@
 #[macro_use]
 extern crate rocket;
 
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 
 pub mod builders;
 pub mod html;
@@ -29,16 +29,15 @@ pub trait App {
     fn new() -> Self;
 
     /// Returns an HTML page, this will be called once before the server starts
-    fn init() -> html::Page;
+    fn init() -> html::HtmlPage;
 
     /// Updates the application state and returns commands to update the UI
     /// this is called on every client event
-    fn update(&mut self, event: Event) -> Vec<Command>;
+    fn update(&mut self, message: Message) -> Vec<Command>;
 }
 
-#[derive(Serialize, Deserialize)]
-struct Message {
-    pub event: String,
+#[derive(Debug, Deserialize)]
+pub struct Message {
     pub id: String,
     pub r#type: String,
     pub name: Option<String>,
@@ -46,87 +45,26 @@ struct Message {
     pub checked: Option<bool>,
 }
 
-/// The type of a client event
-#[derive(Debug)]
-pub enum EventType {
-    Click,
-    NumberChanged(f64),
-    TextChanged(String),
-    RadioChecked(String),
-    CheckChanged(bool),
-}
-
-/// A client event
-#[derive(Debug)]
-pub struct Event {
-    /// The type of the event
-    pub event_type: EventType,
-    /// The ID of the element that produced the event
-    pub id: String,
-    /// The type of control that produced the event
-    pub r#type: String,
-}
-
-impl From<Message> for Event {
-    fn from(message: Message) -> Event {
-        if message.event == "button-click" {
-            Event {
-                event_type: EventType::Click,
-                id: message.id,
-                r#type: message.r#type,
-            }
-        } else if message.event == "check-changed" {
-            if message.r#type == "radio" {
-                Event {
-                    event_type: EventType::RadioChecked(message.name.unwrap()),
-                    id: message.id,
-                    r#type: message.r#type,
-                }
-            } else {
-                Event {
-                    event_type: EventType::CheckChanged(message.checked.unwrap()),
-                    id: message.id,
-                    r#type: message.r#type,
-                }
-            }
-        } else {
-            if message.r#type == "number" {
-                Event {
-                    event_type: EventType::NumberChanged(message.value.unwrap().parse().unwrap()),
-                    id: message.id,
-                    r#type: message.r#type,
-                }
-            } else {
-                Event {
-                    event_type: EventType::TextChanged(message.value.unwrap()),
-                    id: message.id,
-                    r#type: message.r#type,
-                }
-            }
-        }
-    }
-}
-
 /// The type of command to execute in the client
 /// These represent manipulations of the DOM
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub enum CommandType {
     None,
-    AppendChild,
-    InsertBefore,
-    Update,
-    Delete,
+    AppendChildElement(html::Node),
+    InsertElementBefore(html::Node),
+    ReplaceElement(html::Node),
+    RemoveElement,
+    SetAttribute(html::Attr),
+    RemoveAttribute(&'static str),
 }
 
 /// A command to execute on the client
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Command {
     /// The type of command
     pub command_type: CommandType,
     /// The ID of the element affected by the command
     pub id: Option<String>,
-    /// The new node for AppendChild, InsertBefore, and Update commands
-    pub node: Option<html::Node>,
 }
 
 impl Command {
@@ -135,43 +73,62 @@ impl Command {
         Command {
             command_type: CommandType::None,
             id: None,
-            node: None,
         }
     }
 
     /// Returns a command to append a child Node to an element identified by id
-    pub fn append_child<T: Into<String>>(id: T, node: html::Node) -> Command {
+    pub fn append_child_element<T: Into<String>>(id: T, node: html::Node) -> Command {
         Command {
-            command_type: CommandType::AppendChild,
+            command_type: CommandType::AppendChildElement(node),
             id: Some(id.into()),
-            node: Some(node),
         }
     }
 
     /// Returns a command to insert a child Node before an element identified by id
-    pub fn insert_before<T: Into<String>>(id: T, node: html::Node) -> Command {
+    pub fn insert_element_before<T: Into<String>>(id: T, node: html::Node) -> Command {
         Command {
-            command_type: CommandType::InsertBefore,
+            command_type: CommandType::InsertElementBefore(node),
             id: Some(id.into()),
-            node: Some(node),
         }
     }
 
     /// Returns a command to update an element given by id by replacing it with a new Node
-    pub fn update<T: Into<String>>(id: T, node: html::Node) -> Command {
+    pub fn replace_element<T: Into<String>>(id: T, node: html::Node) -> Command {
         Command {
-            command_type: CommandType::Update,
+            command_type: CommandType::ReplaceElement(node),
             id: Some(id.into()),
-            node: Some(node),
         }
     }
 
     /// Returns a command to delete an element given by id
-    pub fn delete<T: Into<String>>(id: T) -> Command {
+    pub fn remove_element<T: Into<String>>(id: T) -> Command {
         Command {
-            command_type: CommandType::Delete,
+            command_type: CommandType::RemoveElement,
             id: Some(id.into()),
-            node: None,
+        }
+    }
+
+    /// Returns a command to set (add or update) an attribute on the element given by id
+    pub fn set_attribute<T: Into<String>, U: Into<String>>(id: T, name: &'static str, value: U) -> Command {
+        Command {
+            command_type: CommandType::SetAttribute(html::Attr::new(name, value)),
+            id: Some(id.into()),
+        }
+    }
+
+    /// Returns a command to set (add or update) a name-only attribute on the element given by id
+    pub fn set_name_only_attribute<T: Into<String>>(id: T, name: &'static str) -> Command {
+        Command {
+            command_type: CommandType::SetAttribute(html::Attr::name_only(name)),
+            id: Some(id.into()),
+        }
+    }
+
+    /// Returns a command to remove an attribute from the element given by id
+    pub fn remove_attribute<T: Into<String>>(id: T, name: &'static str) -> Command {
+        Command {
+            command_type: CommandType::RemoveAttribute(name),
+            id: Some(id.into()),
         }
     }
 }

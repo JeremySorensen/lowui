@@ -10,22 +10,36 @@ with open("elements.json") as file:
     
 
 TEMPLATE = """
-use crate::html::{ Attr, Node };
+use crate::html::{ Attr, Node, EventKind };
 $BUILDER_IMPORT$
 use crate::builders::set_attr::SetAttr;
 
 #[derive(Debug)]
 pub struct $BUILDER_NAME$ {
-    attr: Vec<Attr>,
+    events: Vec<EventKind>,
+    attrs: Vec<Attr>,
     $CHILD_VEC_DECL$
 }
 
 impl $BUILDER_NAME$ {
     pub fn new() -> Self {
-        Self { 
-            attr: Vec::<Attr>::new(),
+        Self {
+            events: Vec::<EventKind>::new(),
+            attrs: Vec::<Attr>::new(),
             $CHILD_VEC_INST$
         }
+    }
+
+    pub fn event(mut self, event_kind: EventKind) -> Self {
+        self.events.push(event_kind);
+        self
+    }
+
+    pub fn events(mut self, event_kinds: Vec<EventKind>) -> Self {
+        for event_kind in event_kinds {
+            self.events.push(event_kind);
+        }
+        self
     }
 
     $ATTR_FUNS$
@@ -35,13 +49,13 @@ impl $BUILDER_NAME$ {
 
 impl NodeBuilder for $BUILDER_NAME$ {
     fn node(self) -> Node {
-        Node::new_el("$TAG_NAME$", self.attr, $CHILDREN$, $IS_EMPTY$)
+        Node::new_el("$TAG_NAME$", self.events, self.attrs, $CHILDREN$, $IS_EMPTY$)
     }
 }
 
 impl SetAttr for $BUILDER_NAME$ {
     fn set_attr<T: Into<String>>(mut self, name: &'static str, value: T) -> Self {
-        self.attr.push(Attr::new(name, value));
+        self.attrs.push(Attr::new(name, value));
         self
     }
 }
@@ -66,14 +80,14 @@ NO_CHILD_VEC = "Vec::<impl NodeBuilder>::new()"
 
 ATTR_VAL_FUN = """
     pub fn $ATTR_NAME_SAFE$<T: Into<String>>(mut self, value: T) -> Self {
-        self.attr.push(Attr::new("$ATTR_NAME$", value));
+        self.attrs.push(Attr::new("$ATTR_NAME$", value));
         self
     }
 """
 
 ATTR_NO_VAL_FUN = """
     pub fn $ATTR_NAME_SAFE$(mut self) -> Self {
-        self.attr.push(Attr::name_only("$ATTR_NAME$"));
+        self.attrs.push(Attr::name_only("$ATTR_NAME$"));
         self
     }
 """

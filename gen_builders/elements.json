@@ -78,15 +78,6 @@
     "has_events": true
   },
   {
-    "tag": "base",
-    "attr": [
-      "href",
-      "target"
-    ],
-    "has_global": false,
-    "has_events": true
-  },
-  {
     "tag": "bdi",
     "attr": [],
     "has_global": true,
@@ -103,12 +94,6 @@
     "attr": [
       "cite"
     ],
-    "has_global": true,
-    "has_events": true
-  },
-  {
-    "tag": "body",
-    "attr": [],
     "has_global": true,
     "has_events": true
   },
@@ -346,12 +331,6 @@
     "has_events": true
   },
   {
-    "tag": "head",
-    "attr": [],
-    "has_global": true,
-    "has_events": false
-  },
-  {
     "tag": "header",
     "attr": [],
     "has_global": true,
@@ -486,22 +465,6 @@
     "has_events": true
   },
   {
-    "tag": "link",
-    "attr": [
-      "crossorigin",
-      "href",
-      "hreflang",
-      "media",
-      "nonce",
-      "referrerpolicy",
-      "rel",
-      "sizes",
-      "type"
-    ],
-    "has_global": true,
-    "has_events": true
-  },
-  {
     "tag": "main",
     "attr": [],
     "has_global": true,
@@ -522,17 +485,6 @@
     "has_events": true
   },
   {
-    "tag": "meta",
-    "attr": [
-      "charset",
-      "content",
-      "http-equiv",
-      "name"
-    ],
-    "has_global": true,
-    "has_events": false
-  },
-  {
     "tag": "meter",
     "attr": [
       "high",
@@ -550,12 +502,6 @@
     "attr": [],
     "has_global": true,
     "has_events": true
-  },
-  {
-    "tag": "noscript",
-    "attr": [],
-    "has_global": true,
-    "has_events": false
   },
   {
     "tag": "object",
@@ -684,20 +630,6 @@
     "attr": [],
     "has_global": true,
     "has_events": true
-  },
-  {
-    "tag": "script",
-    "attr": [
-      "async",
-      "charset",
-      "crossorigin",
-      "nonce",
-      "defer",
-      "src",
-      "type"
-    ],
-    "has_global": true,
-    "has_events": false
   },
   {
     "tag": "section",
