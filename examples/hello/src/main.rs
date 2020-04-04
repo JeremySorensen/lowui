@@ -82,5 +82,9 @@ impl lowui::App for Application {
 }
 
 fn main() {
+    let mut path = std::path::PathBuf::from(std::env::current_exe().unwrap().parent().unwrap());
+    path.push("static");
+    path.push("index.css");
+    println!("{:?}", path);
     lowui::start::<Application>();
 }

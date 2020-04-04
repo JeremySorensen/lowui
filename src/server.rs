@@ -1,4 +1,6 @@
-use rocket::response::content::Html;
+use std::fs;
+
+use rocket::response::content::{ Html, Css };
 use rocket::State;
 
 use std::net::TcpListener;
@@ -12,10 +14,28 @@ fn index(html: State<String>) -> Html<String> {
     Html(html.inner().to_string())
 }
 
+#[get("/html/<page>")]
+fn html(page: String) -> Html<String> {
+    let mut path = std::path::PathBuf::from(std::env::current_exe().unwrap().parent().unwrap());
+    path.push("static");
+    path.push(page);
+    Html(fs::read_to_string(path)
+        .expect("Something went wrong reading the file"))
+}
+
+#[get("/css/<page>")]
+fn css(page: String) -> Css<String> {
+    let mut path = std::path::PathBuf::from(std::env::current_exe().unwrap().parent().unwrap());
+    path.push("css");
+    path.push(page);
+    Css(fs::read_to_string(path)
+        .expect("Something went wrong reading the file"))
+}
+
 fn http_init(html: String) {
     rocket::ignite()
         .manage(html)
-        .mount("/", routes![index])
+        .mount("/", routes![index, html, css])
         .launch();
 }
 
